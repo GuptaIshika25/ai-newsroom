@@ -5,9 +5,12 @@ from __future__ import annotations
 import asyncio
 from datetime import date
 
-from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
+import time
+
+from claude_agent_sdk import ClaudeAgentOptions
 
 from src.state import DB, Story
+from src.tools.retry import query_with_retry
 
 _LEAD_INSTRUCTIONS = (
     "You are the Writer for a daily AI-news audio brief. "
@@ -29,14 +32,11 @@ _SNIPPET_INSTRUCTIONS = (
 
 
 async def _draft(instructions: str, story_block: str) -> str:
-    result_text = ""
-    async for message in query(
-        prompt=instructions + "\n\nStory:\n" + story_block,
-        options=ClaudeAgentOptions(allowed_tools=[]),
-    ):
-        if isinstance(message, ResultMessage):
-            result_text = message.result
-    return result_text.strip()
+    result = await query_with_retry(
+        instructions + "\n\nStory:\n" + story_block,
+        ClaudeAgentOptions(allowed_tools=[]),
+    )
+    return result.strip()
 
 
 def _story_block(s: Story) -> str:
@@ -72,6 +72,7 @@ def run(run_date: str | None = None) -> tuple[Story, list[Story]]:
 
     # Draft each snippet
     for i, s in enumerate(snippets, 1):
+        time.sleep(1.5)
         print(f"Writing snippet {i}/{len(snippets)}: \"{s.title[:55]}...\"")
         s.draft = asyncio.run(_draft(_SNIPPET_INSTRUCTIONS, _story_block(s)))
         s.status = "drafted"

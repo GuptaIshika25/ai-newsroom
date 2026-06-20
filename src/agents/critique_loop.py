@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from dataclasses import dataclass
 from datetime import date
 
-from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
+from claude_agent_sdk import ClaudeAgentOptions
 
 from src.agents import factchecker
+from src.tools.retry import query_with_retry
 from src.state import DB, Story
 
 MAX_REVISIONS = 2
@@ -42,14 +44,8 @@ async def _revise(story: Story, reject_notes: str) -> str:
         + f"\n\nOriginal draft:\n{story.draft}"
         + f"\n\nSource:\n{story.raw_summary}"
     )
-    result_text = ""
-    async for message in query(
-        prompt=prompt,
-        options=ClaudeAgentOptions(allowed_tools=[]),
-    ):
-        if isinstance(message, ResultMessage):
-            result_text = message.result
-    return result_text.strip()
+    result = await query_with_retry(prompt, ClaudeAgentOptions(allowed_tools=[]))
+    return result.strip()
 
 
 def run_story(story: Story, db: DB) -> LoopResult:
@@ -81,6 +77,7 @@ def run_story(story: Story, db: DB) -> LoopResult:
 
         # Send back to Writer for a revision
         print(f"  REJECT (revision {attempt + 1}/{MAX_REVISIONS}): {label}")
+        time.sleep(1.5)
         revised = asyncio.run(_revise(story, notes))
         if revised:
             story.draft = revised
@@ -129,6 +126,7 @@ def run(run_date: str | None = None) -> list[LoopResult]:
 
     # Check snippets
     for i, s in enumerate(snippets, 1):
+        time.sleep(1.5)
         print(f"\nChecking snippet {i}/{len(snippets)} ...")
         results.append(run_story(s, db))
 

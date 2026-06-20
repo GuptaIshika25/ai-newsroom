@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 
-from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
+from claude_agent_sdk import ClaudeAgentOptions
 
 from src.state import Story
+from src.tools.retry import query_with_retry
 
 _INSTRUCTIONS = (
     "You are the Fact-checker for a daily AI-news audio brief. "
@@ -28,14 +29,8 @@ async def _check(story: Story) -> str:
         + f"\nSource text:\n{story.raw_summary}"
         + f"\n\nDraft narration:\n{story.draft}"
     )
-    result_text = ""
-    async for message in query(
-        prompt=prompt,
-        options=ClaudeAgentOptions(allowed_tools=[]),
-    ):
-        if isinstance(message, ResultMessage):
-            result_text = message.result
-    return result_text.strip()
+    result = await query_with_retry(prompt, ClaudeAgentOptions(allowed_tools=[]))
+    return result.strip()
 
 
 def verify(story: Story) -> tuple[bool, str]:

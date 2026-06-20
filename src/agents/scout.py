@@ -8,10 +8,11 @@ import json
 from datetime import date
 
 import yaml
-from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
+from claude_agent_sdk import ClaudeAgentOptions
 
 from src.state import DB, Story
 from src.tools import feeds
+from src.tools.retry import query_with_retry
 
 _PROMPT_TEMPLATE = """\
 You are the Scout for a daily AI-news brief. Today's date: {today}.
@@ -34,16 +35,7 @@ Items to evaluate:
 
 async def _run_scout(prompt: str) -> str:
     """Call the Claude Agent SDK and return the final result text."""
-    result_text = ""
-    async for message in query(
-        prompt=prompt,
-        options=ClaudeAgentOptions(
-            allowed_tools=[],   # pure reasoning — no filesystem tools needed
-        ),
-    ):
-        if isinstance(message, ResultMessage):
-            result_text = message.result
-    return result_text
+    return await query_with_retry(prompt, ClaudeAgentOptions(allowed_tools=[]))
 
 
 def run(run_date: str | None = None) -> list[Story]:
