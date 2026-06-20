@@ -102,7 +102,7 @@ def run(run_date: str | None = None, dry_run: bool = False) -> None:
 
     # ── 5. Producer ──────────────────────────────────────────
     _banner("5 / 6  Producer — assembling script + synthesising mp3")
-    mp3_path = Path("output") / f"ai-newsroom-{today}.mp3"
+    mp3_path = Path("output") / f"ai-newsroom-{today}.wav"
     if dry_run and mp3_path.exists():
         print(f"  [dry-run] reusing existing mp3: {mp3_path}")
     else:
@@ -141,6 +141,7 @@ def _abort(stage: str, exc: Exception) -> None:
     print(f"\n  ERROR in {stage}: {exc}")
     traceback.print_exc()
     print(f"  Run aborted.")
+    sys.exit(1)
 
 
 def _any_stories_for_date(run_date: str):

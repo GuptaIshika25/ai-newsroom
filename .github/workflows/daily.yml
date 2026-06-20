@@ -34,4 +34,5 @@ jobs:
           # The Agent SDK reads this env var directly — no `claude auth login` needed.
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python -m src.main

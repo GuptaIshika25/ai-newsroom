@@ -84,7 +84,7 @@ def run(run_date: str | None = None) -> Path:
     print(f"  Script: {word_count} words across 1 lead + {len(snippets)} snippets")
 
     OUTPUT_DIR.mkdir(exist_ok=True)
-    mp3_path = OUTPUT_DIR / f"ai-newsroom-{today}.mp3"
+    mp3_path = OUTPUT_DIR / f"ai-newsroom-{today}.wav"
     script_path = OUTPUT_DIR / f"ai-newsroom-{today}.txt"
 
     # Save the script text for inspection

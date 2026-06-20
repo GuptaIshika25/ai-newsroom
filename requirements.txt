@@ -1,6 +1,6 @@
 feedparser==6.0.11
 claude-agent-sdk>=0.0.14
-edge-tts==6.1.12
+google-genai
 resend==2.4.0
 PyYAML==6.0.2
 python-dateutil==2.9.0
