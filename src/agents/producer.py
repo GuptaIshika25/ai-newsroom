@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from datetime import date
 from pathlib import Path
 
@@ -84,7 +85,8 @@ def run(run_date: str | None = None) -> Path:
     print(f"  Script: {word_count} words across 1 lead + {len(snippets)} snippets")
 
     OUTPUT_DIR.mkdir(exist_ok=True)
-    mp3_path = OUTPUT_DIR / f"ai-newsroom-{today}.wav"
+    wav_path = OUTPUT_DIR / f"ai-newsroom-{today}.wav"
+    mp3_path = OUTPUT_DIR / f"ai-newsroom-{today}.mp3"
     script_path = OUTPUT_DIR / f"ai-newsroom-{today}.txt"
 
     # Save the script text for inspection
@@ -92,7 +94,16 @@ def run(run_date: str | None = None) -> Path:
     print(f"  Script saved: {script_path}")
 
     print(f"Synthesising audio (voice: {voice}) ...")
-    tts.synthesise(script, mp3_path, voice=voice, rate=rate)
+    tts.synthesise(script, wav_path, voice=voice, rate=rate)
+
+    print("  Converting WAV → MP3 ...")
+    subprocess.run(
+        ["ffmpeg", "-y", "-i", str(wav_path), "-q:a", "4", str(mp3_path)],
+        check=True,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    wav_path.unlink()
 
     # Mark all stories as produced
     db = DB()
