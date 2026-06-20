@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c ' *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(pip install *)",
+      "Bash(python -m src.agents.scout)",
+      "Bash(python -c \"import os; print\\(os.environ.get\\('ANTHROPIC_API_KEY',''\\)\\)\")",
+      "Bash(ANTHROPIC_API_KEY=$\\(python -c \"import os; print\\(os.environ.get\\('ANTHROPIC_API_KEY',''\\)\\)\"\\) python -m src.agents.scout)",
+      "WebFetch(domain:docs.claude.com)",
+      "Read(//Users/ishikagupta/.claude/**)",
+      "Bash(python -c \"import json,pathlib; d=pathlib.Path.home\\(\\)/'.claude'; [print\\(f\\) for f in d.iterdir\\(\\) if 'auth' in f.name.lower\\(\\) or 'cred' in f.name.lower\\(\\) or 'token' in f.name.lower\\(\\)]\")",
+      "Bash(claude --version)",
+      "Bash(mdfind -name claude)",
+      "Bash(python -c \"import inspect, claude_agent_sdk; print\\(inspect.signature\\(claude_agent_sdk.ClaudeAgentOptions\\)\\)\")",
+      "Bash(python -c \"import claude_agent_sdk._internal.client as c; import inspect; print\\(inspect.getsource\\(c.ClaudeCodeClient.__init__\\)\\)\")",
+      "Bash('/Users/ishikagupta/Library/Application Support/Claude/claude-code-vm/2.1.181/claude' --version)",
+      "Bash(file \"/Users/ishikagupta/Library/Application Support/Claude/claude-code/2.1.181/claude.app/Contents/MacOS/claude\")",
+      "Bash('/Users/ishikagupta/Library/Application Support/Claude/claude-code/2.1.181/claude.app/Contents/MacOS/claude' --version)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\({k: v[:20]+'...' if isinstance\\(v,str\\) and len\\(v\\)>20 else v for k,v in d.items\\(\\)}\\)\")",
+      "Bash(env)",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\({k: str\\(v\\)[:30]+'...' if len\\(str\\(v\\)\\)>30 else v for k,v in d.items\\(\\)}\\)\")",
+      "Bash(security find-generic-password *)",
+      "Bash(security find-internet-password *)",
+      "Bash(python -c \"import claude_agent_sdk._internal.query as q; import inspect; src = inspect.getsource\\(q\\); print\\(src[src.find\\('oauth'\\):src.find\\('oauth'\\)+2000]\\)\")",
+      "Bash(ls /opt/anaconda3/lib/python3.13/site-packages/claude_agent_sdk/_internal/ *)",
+      "Bash(python -c ' *)",
+      "Bash(security dump-keychain *)",
+      "Bash(\"/Users/ishikagupta/Library/Application Support/Claude/claude-code/2.1.181/claude.app/Contents/MacOS/claude\" --help)",
+      "Bash(\"/Users/ishikagupta/Library/Application Support/Claude/claude-code/2.1.181/claude.app/Contents/MacOS/claude\" auth --help)",
+      "Bash(python -c \"import edge_tts; print\\('ok'\\)\")",
+      "Bash(pip show *)",
+      "Bash(python -c \"import resend; print\\('ok'\\)\")",
+      "Bash(# Check if credentials.json exists now or what setup-token wrote *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+name: Daily AI Newsroom
+
+on:
+  schedule:
+    # 11:00 UTC = 7:00 AM ET. Adjust to your preferred delivery time.
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}   # manual trigger from the Actions tab
+
+jobs:
+  daily-brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30   # pipeline takes ~10 min; this is a safety cap
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Claude Code CLI
+        # The Agent SDK spawns a `claude` subprocess — npm gives us that binary.
+        # Node is pre-installed on ubuntu-latest, so this is a one-liner.
+        run: npm install -g @anthropic-ai/claude-code@latest
+
+      - name: Run AI Newsroom pipeline
+        env:
+          # CLAUDE_CODE_OAUTH_TOKEN: the long-lived token from `claude setup-token`.
+          # Store it in GitHub → Settings → Secrets → Actions as CLAUDE_CODE_OAUTH_TOKEN.
+          # The Agent SDK reads this env var directly — no `claude auth login` needed.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: python -m src.main

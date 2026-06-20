@@ -1,0 +1,46 @@
+newsletter:
+  name: "AI Newsroom"
+  model: "claude-haiku-4-5-20251001"
+  lookback_hours: 28
+
+format:
+  lead_count: 1
+  snippet_min: 10
+  snippet_max: 15
+  lead_words: [450, 750]
+  snippet_words: [120, 150]
+
+audio:
+  voice: "en-US-AvaMultilingualNeural"
+  rate: "+0%"
+
+email:
+  from_address: "AI Newsroom <onboarding@resend.dev>"
+  to_addresses:
+    - "guptais6@msu.edu"
+
+feeds:
+  - { name: "TechCrunch AI", url: "https://techcrunch.com/category/artificial-intelligence/feed/" }
+  - { name: "The Verge AI", url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" }
+  - { name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/" }
+  - { name: "MIT Tech Review", url: "https://www.technologyreview.com/feed/" }
+  - { name: "OpenAI", url: "https://openai.com/news/rss.xml" }
+  - { name: "Google DeepMind", url: "https://deepmind.google/blog/rss.xml" }
+  - { name: "Hugging Face", url: "https://huggingface.co/blog/feed.xml" }
+
+relevance_keywords:
+  - ai
+  - llm
+  - gpt
+  - claude
+  - gemini
+  - openai
+  - anthropic
+  - model
+  - agent
+  - regulation
+  - funding
+  - layoff
+  - benchmark
+  - chip
+  - open source
