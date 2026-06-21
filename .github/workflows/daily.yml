@@ -3,7 +3,7 @@ name: Daily AI Newsroom
 on:
   schedule:
     # 11:00 UTC = 7:00 AM ET. Adjust to your preferred delivery time.
-    - cron: "0 11 * * *"
+    - cron: "43 07 * * *"
   workflow_dispatch: {}   # manual trigger from the Actions tab
 
 jobs:
