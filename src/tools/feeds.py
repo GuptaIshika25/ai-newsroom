@@ -51,6 +51,7 @@ def fetch(config: dict) -> list[RawItem]:
     """
     nl = config["newsletter"]
     keywords = config["relevance_keywords"]
+    exclude = [e.lower() for e in config.get("exclude_keywords", [])]
     cutoff = datetime.now(timezone.utc) - timedelta(hours=nl["lookback_hours"])
 
     seen: dict[str, RawItem] = {}
@@ -73,6 +74,10 @@ def fetch(config: dict) -> list[RawItem]:
             if not title or not url:
                 continue
 
+            blob_l = f"{title} {summary}".lower()
+            if any(bad in blob_l for bad in exclude):
+                continue  # war / conflict / geopolitics — out of scope, even if AI-related
+
             score = _score(title, summary, keywords)
             if score == 0:
                 continue
@@ -90,4 +95,20 @@ def fetch(config: dict) -> list[RawItem]:
             if uid not in seen or seen[uid]["score"] < score:
                 seen[uid] = item
 
-    return sorted(seen.values(), key=lambda x: x["score"], reverse=True)
+    items = sorted(seen.values(), key=lambda x: x["score"], reverse=True)
+
+    # Cap per-source dominance so no single outlet floods the candidate pool.
+    # Items are score-desc, so each source keeps its highest-scoring items.
+    cap = config.get("max_per_source")
+    if cap:
+        per_source: dict[str, int] = {}
+        capped: list[RawItem] = []
+        for it in items:
+            src = it["source"]
+            if per_source.get(src, 0) >= cap:
+                continue
+            per_source[src] = per_source.get(src, 0) + 1
+            capped.append(it)
+        items = capped
+
+    return items

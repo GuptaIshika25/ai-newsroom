@@ -21,6 +21,11 @@ From the items below, keep only those genuinely about AI — model launches, res
 policy/regulation, funding, layoffs, notable product moves.
 Drop off-topic items, ads, and duplicates.
 
+HARD EXCLUDE — never keep these, even when AI is involved: war, armed conflict, military
+operations, weapons, terrorism, and diplomatic or geopolitical disputes. This is a tech
+and business brief, not world news. (AI regulation, AI law, antitrust, and chip/export
+policy ARE in scope; anything battlefield, military, or conflict-related is NOT.)
+
 Return ONLY a JSON array with no commentary, markdown, or code fences.
 Each element must have exactly these keys:
   "title"  — the item title (string)

@@ -36,8 +36,13 @@ def _outro(name: str) -> str:
     )
 
 
-def assemble_script(run_date: str, config: dict) -> tuple[str, Story, list[Story]]:
-    """Pull verified stories from DB, assemble ordered script, return (script, lead, snippets)."""
+def assemble_script(run_date: str, config: dict) -> tuple[str, list[str], Story, list[Story]]:
+    """Pull verified stories, assemble the ordered script + per-segment list.
+
+    Returns (script_text, segments, lead, snippets). `segments` is the list fed to the
+    chunked TTS (intro, lead, each snippet, outro); `script_text` is the same joined for
+    saving/inspection.
+    """
     db = DB()
     verified = db.by_date(run_date, status="verified")
     db.close()
@@ -49,24 +54,28 @@ def assemble_script(run_date: str, config: dict) -> tuple[str, Story, list[Story
     snippets = [s for s in verified if s.role == "snippet"]
 
     if lead is None:
-        raise RuntimeError("No verified lead story found.")
+        # The intended lead (and any promoted replacement) was dropped — e.g. its source
+        # was unfetchable. Rather than abort the whole run, promote the highest-scored
+        # surviving snippet so the listener still gets an episode.
+        if snippets:
+            snippets = sorted(snippets, key=lambda s: s.score, reverse=True)
+            lead = snippets.pop(0)
+            print(f"  No verified lead — promoting top snippet to lead: [{lead.source}] {lead.title[:55]}")
+        else:
+            raise RuntimeError(f"No verified stories with content for {run_date} — nothing to produce.")
+
+    # Cap the spoken brief to the top N stories (1 lead + the rest as snippets).
+    audio_stories = config.get("format", {}).get("audio_stories", 5)
+    snippets = snippets[: max(0, audio_stories - 1)]
 
     name = config["newsletter"]["name"]
-    parts = [
-        _intro(run_date, name),
-        "",
-        lead.draft or "",
-    ]
+    segments = [_intro(run_date, name), lead.draft or ""]
+    segments += [s.draft or "" for s in snippets]
+    segments.append(_outro(name))
+    segments = [seg for seg in segments if seg.strip()]
 
-    for s in snippets:
-        parts.append("")
-        parts.append(s.draft or "")
-
-    parts.append("")
-    parts.append(_outro(name))
-
-    script = "\n".join(parts)
-    return script, lead, snippets
+    script = "\n\n".join(segments)
+    return script, segments, lead, snippets
 
 
 def run(run_date: str | None = None) -> Path:
@@ -80,9 +89,9 @@ def run(run_date: str | None = None) -> Path:
     rate = audio_cfg.get("rate", "+0%")
 
     print("Assembling script ...")
-    script, lead, snippets = assemble_script(today, config)
+    script, segments, lead, snippets = assemble_script(today, config)
     word_count = len(script.split())
-    print(f"  Script: {word_count} words across 1 lead + {len(snippets)} snippets")
+    print(f"  Script: {word_count} words across 1 lead + {len(snippets)} snippets ({len(segments)} segments)")
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     wav_path = OUTPUT_DIR / f"ai-newsroom-{today}.wav"
@@ -93,8 +102,8 @@ def run(run_date: str | None = None) -> Path:
     script_path.write_text(script, encoding="utf-8")
     print(f"  Script saved: {script_path}")
 
-    print(f"Synthesising audio (voice: {voice}) ...")
-    tts.synthesise(script, wav_path, voice=voice, rate=rate)
+    print(f"Synthesising audio (voice: {voice}) — {len(segments)} segments ...")
+    tts.synthesise_segments(segments, wav_path, voice=voice, rate=rate)
 
     print("  Converting WAV → MP3 ...")
     subprocess.run(

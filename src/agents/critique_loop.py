@@ -11,6 +11,7 @@ from claude_agent_sdk import ClaudeAgentOptions
 
 from src.agents import factchecker
 from src.tools.retry import query_with_retry
+from src.tools.validate import is_valid_narration
 from src.state import DB, Story
 
 MAX_REVISIONS = 2
@@ -51,6 +52,19 @@ async def _revise(story: Story, reject_notes: str) -> str:
 def run_story(story: Story, db: DB) -> LoopResult:
     """Run the Writer→Fact-checker loop for one story. Mutates story and persists."""
     label = f"[{story.role.upper()}] {story.title[:55]}..."
+
+    # Guard: if the Writer returned a refusal / meta-text instead of narration
+    # (usually because the source was unfetchable or too thin), skip the story
+    # entirely — don't fact-check it, don't revise it, don't let it reach the audio.
+    valid, reason = is_valid_narration(story.draft, story.role)
+    if not valid:
+        story.role = "dropped"
+        story.verified = False
+        story.verify_notes = f"dropped before fact-check: {reason}"
+        story.status = "ranked"   # un-draft so it won't enter producer
+        db.upsert(story)
+        print(f"  DROP (invalid draft — {reason}): {label}")
+        return LoopResult(story=story, outcome="dropped", revisions_made=0, notes=story.verify_notes)
 
     for attempt in range(MAX_REVISIONS + 1):
         approved, notes = factchecker.verify(story)

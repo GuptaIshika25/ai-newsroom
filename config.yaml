@@ -9,6 +9,11 @@ format:
   snippet_max: 15
   lead_words: [450, 750]
   snippet_words: [120, 150]
+  audio_stories: 5        # spoken brief + email digest = 1 lead + 4 snippets
+
+# Cap how many items any single outlet can contribute to the candidate pool,
+# so no one source (e.g. TechCrunch) dominates the day's mix.
+max_per_source: 6
 
 audio:
   voice: "Zephyr"
@@ -20,27 +25,96 @@ email:
     - "guptais6@msu.edu"
 
 feeds:
+  # Tech/AI trade press
   - { name: "TechCrunch AI", url: "https://techcrunch.com/category/artificial-intelligence/feed/" }
   - { name: "The Verge AI", url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml" }
   - { name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/" }
   - { name: "MIT Tech Review", url: "https://www.technologyreview.com/feed/" }
+  - { name: "Ars Technica", url: "https://feeds.arstechnica.com/arstechnica/index" }
+  - { name: "Wired AI", url: "https://www.wired.com/feed/tag/artificial-intelligence/latest/rss" }
+  # Mainstream / global / policy
+  - { name: "The Guardian AI", url: "https://www.theguardian.com/technology/artificialintelligenceai/rss" }
+  - { name: "BBC Technology", url: "https://feeds.bbci.co.uk/news/technology/rss.xml" }
+  - { name: "Google News: AI policy", url: "https://news.google.com/rss/search?q=%22artificial+intelligence%22+(regulation+OR+lawsuit+OR+antitrust+OR+copyright+OR+funding)+when:2d&hl=en-US&gl=US&ceid=US:en" }
+  # Primary sources (labs)
   - { name: "OpenAI", url: "https://openai.com/news/rss.xml" }
   - { name: "Google DeepMind", url: "https://deepmind.google/blog/rss.xml" }
   - { name: "Hugging Face", url: "https://huggingface.co/blog/feed.xml" }
 
 relevance_keywords:
+  # Core AI
   - ai
+  - artificial intelligence
   - llm
   - gpt
   - claude
   - gemini
   - openai
   - anthropic
+  - deepmind
   - model
   - agent
-  - regulation
-  - funding
-  - layoff
+  - chatbot
+  - neural
   - benchmark
   - chip
+  - gpu
+  - data center
   - open source
+  # Business / money
+  - funding
+  - layoff
+  - acquisition
+  - startup
+  # Policy / regulation / global (so non-product stories survive the gate)
+  - regulation
+  - policy
+  - lawsuit
+  - antitrust
+  - copyright
+  - privacy
+  - governance
+  - executive order
+  - congress
+  - white house
+  - european union
+  - brussels
+  - export
+  - sanction
+  - safety
+  - ban
+  - ruling
+
+# Hard exclusions: drop any item matching these, even if it mentions AI. Keeps the brief
+# a tech/business/policy brief and out of war, conflict, and geopolitics entirely.
+# (Note: AI chip/export policy and AI regulation stay IN scope — handled by the Scout/Editor.)
+exclude_keywords:
+  - war
+  - warfare
+  - military
+  - militant
+  - militia
+  - troops
+  - soldier
+  - missile
+  - airstrike
+  - air strike
+  - drone strike
+  - shelling
+  - artillery
+  - warhead
+  - weapon
+  - munition
+  - battlefield
+  - invasion
+  - ceasefire
+  - hostage
+  - genocide
+  - massacre
+  - atrocity
+  - insurgent
+  - terrorist
+  - terrorism
+  - civil war
+  - autonomous weapon
+  - casualties

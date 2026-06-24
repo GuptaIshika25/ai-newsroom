@@ -15,9 +15,13 @@ from src.tools.retry import query_with_retry
 _INSTRUCTIONS = (
     "You are the Editor for a daily AI-news brief. "
     "Pick the ONE most significant story of the day as the lead — biggest impact on people "
-    "building with or affected by AI. Then select up to 10–15 more as snippets, ordered by "
-    "importance. Dedupe near-identical stories. Flex the snippet count with news quality. "
-    "Drop the rest.\n\n"
+    "building with, governing, or affected by AI. Then select the 6 best remaining stories as "
+    "snippets, ordered by importance. Favour a mix: not everything from one outlet, and include "
+    "policy, regulation, and global/non-US developments when they matter, not just product news. "
+    "Dedupe near-identical stories (same event from different outlets). Drop the rest. "
+    "NEVER select anything about war, armed conflict, military, weapons, terrorism, or "
+    "diplomatic/geopolitical disputes — even if AI is involved; this is a tech/business "
+    "brief, not world news (AI regulation and chip/export policy are fine).\n\n"
     "Return ONLY a JSON object with no commentary or code fences:\n"
     '{"lead": "<story_id>", "snippets": ["<id>", ...], "dropped": ["<id>", ...]}\n'
     "Use the exact id values from the input. Do not explain your choices."

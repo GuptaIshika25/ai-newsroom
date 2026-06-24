@@ -34,7 +34,14 @@
       "Bash(python -c \"import resend; print\\('ok'\\)\")",
       "Bash(# Check if credentials.json exists now or what setup-token wrote *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(grep -E \"\\\\.env$|newsroom\\\\.db|\\\\.mp3\")",
+      "Bash(git --version)",
+      "Bash(git config *)",
+      "Bash(# Check if GitHub CLI is anywhere on the system *)",
+      "Bash(git remote *)",
+      "Bash(git push *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

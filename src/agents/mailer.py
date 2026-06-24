@@ -36,6 +36,10 @@ def run(run_date: str | None = None) -> str:
     if lead is None:
         raise RuntimeError("No lead story found.")
 
+    # Match the email digest to the spoken brief: top N stories (1 lead + rest).
+    audio_stories = config.get("format", {}).get("audio_stories", 5)
+    snippets = snippets[: max(0, audio_stories - 1)]
+
     mp3_path = OUTPUT_DIR / f"ai-newsroom-{today}.mp3"
     if not mp3_path.exists():
         raise RuntimeError(f"mp3 not found at {mp3_path}. Run Producer first.")
