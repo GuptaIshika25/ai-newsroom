@@ -39,3 +39,39 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python -m src.main
+
+      - name: Publish episode to portfolio
+        # Pushes the day's MP3 + a small manifest into the portfolio repo so the
+        # site's play button serves today's episode. Needs PORTFOLIO_DEPLOY_TOKEN:
+        # a fine-grained PAT with Contents: write on GuptaIshika25.github.io,
+        # stored in this repo's Settings → Secrets → Actions.
+        if: success()
+        env:
+          PORTFOLIO_DEPLOY_TOKEN: ${{ secrets.PORTFOLIO_DEPLOY_TOKEN }}
+        run: |
+          set -euo pipefail
+          TODAY=$(date -u +%F)
+          MP3="output/ai-newsroom-${TODAY}.mp3"
+          if [ ! -f "$MP3" ]; then
+            echo "No episode at ${MP3} — nothing to publish, skipping."
+            exit 0
+          fi
+          git clone --depth 1 \
+            "https://x-access-token:${PORTFOLIO_DEPLOY_TOKEN}@github.com/GuptaIshika25/GuptaIshika25.github.io.git" \
+            portfolio
+          mkdir -p portfolio/audio
+          cp "$MP3" portfolio/audio/latest.mp3
+          SPOKEN_DATE=$(date -u -d "${TODAY}" +"%B %-d, %Y")
+          cat > portfolio/audio/episode.json <<EOF
+          {
+            "title": "AI News Brief · ${SPOKEN_DATE}",
+            "date": "${TODAY}",
+            "file": "latest.mp3"
+          }
+          EOF
+          cd portfolio
+          git config user.name "ai-newsroom-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add audio/latest.mp3 audio/episode.json
+          git commit -m "Publish AI News Brief for ${TODAY}" || { echo "No changes to publish."; exit 0; }
+          git push origin HEAD:main
