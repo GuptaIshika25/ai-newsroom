@@ -1,82 +1,157 @@
-# AI TLDR — your 5-minute AI morning brief
+# AI Newsroom
 
-An automated daily newsletter that scans the AI news cycle overnight, summarizes
-what actually matters with Claude, and delivers it to your inbox as a clean HTML
-email **plus a podcast-style audio version** — so you can read it over coffee or
-listen on your commute. Built to run itself, for free, on a schedule.
+A small team of AI agents that writes and narrates a daily AI news podcast on its own. It scouts the day's stories, fact-checks its own drafts, narrates an episode and emails it. It runs free, on a schedule, with no server to manage.
 
-> Built as a portfolio project to demonstrate end-to-end AI product building:
-> sourcing, LLM summarization, multi-format delivery, and zero-ops scheduling.
+Live podcast: it auto-publishes to my portfolio every day at [guptaishika25.github.io](https://guptaishika25.github.io).
 
-## What it does
+---
 
-1. **Fetches** the last ~24h of stories from reputable AI feeds (TechCrunch,
-   The Verge, VentureBeat, MIT Tech Review, OpenAI, DeepMind, Hugging Face…).
-2. **Ranks** them for AI relevance — launches, model releases, policy, funding,
-   layoffs, benchmarks — and keeps the top stories.
-3. **Summarizes** each into a one-or-two-sentence TLDR with Claude, plus a short
-   editor's intro tying the day together.
-4. **Renders** a responsive HTML email, a plain-text version, and an audio script.
-5. **Narrates** the brief to an MP3 (free, no API key, via edge-tts).
-6. **Sends** the email with the audio attached, via Resend.
-7. **Runs daily** on GitHub Actions — no server, no cost.
+## What this is, in plain words
 
-## Architecture
+Most "AI" projects are one prompt sent to one model. This is not that.
+
+AI Newsroom is an **agentic AI system**, which means the work is split across several specialized agents that each do one job, hand work to each other, and check each other before anything ships. Think of a real newsroom. A scout finds stories, an editor decides what runs, a writer drafts it, a fact-checker pushes back, and a producer turns the final script into audio. Here, each of those roles is its own AI agent, and an orchestrator runs the handoffs.
+
+The point of the design is trust. A single model asked to "summarize the news" will sometimes make things up or read a refusal out loud. By giving the fact-checker the power to reject the writer's draft and send it back for a second pass, the system catches most of those problems before they reach your inbox.
+
+---
+
+## How it works
+
+Six agents, built on the **Claude Agent SDK**, with **Claude Haiku** as the reasoning model to keep the daily cost near zero.
+
+| Agent | What it does |
+|---|---|
+| **Scout** | Pulls candidate stories from RSS feeds and decides what is relevant for today. |
+| **Editor** | Ranks the stories, removes duplicates and sets the lineup in priority order. |
+| **Writer** | Drafts each summary and the episode intro in a consistent voice. |
+| **Fact-checker** | Checks every draft against its source. It can reject the writer's work and demand a rewrite. This is the loop that makes the output safe to send. |
+| **Producer** | Turns the approved script into a narrated audio episode using Gemini text to speech. |
+| **Orchestrator** | Runs the whole pipeline and coordinates every handoff and revision. |
+
+The flow:
 
 ```
-config.yaml ──▶ src/main.py ──▶ fetch.py     (RSS → ranked stories)
-                              ├▶ summarize.py (Claude → TLDRs + intro)
-                              ├▶ render.py    (HTML / text / audio script)
-                              ├▶ audio.py     (edge-tts → MP3)
-                              └▶ email_send.py(Resend → inbox)
-.github/workflows/daily.yml   (cron: runs the whole thing every morning)
+Scout  ->  Editor  ->  Writer  ->  Fact-checker  ->  Producer  ->  Podcast + email
+                          ^              |
+                          |   reject and revise
+                          +--------------+
+
+         Orchestrator coordinates every handoff
 ```
 
-## What you need to sign up for
+A draft that fails fact-checking twice is dropped instead of shipped, and if the lead story does not survive, the producer promotes the next strongest story so the episode never aborts. The result every morning is a real artifact: a short narrated episode plus an email brief.
 
-Two free accounts. That's it.
+---
 
-| Service | Why | Cost | Where |
-|---|---|---|---|
-| **Anthropic API** | Powers the summaries (Claude) | Pay-as-you-go; ~$0.01–0.05/day on Haiku | console.anthropic.com → API Keys |
-| **Resend** | Sends the email | Free: 100 emails/day, 3k/month | resend.com → API Keys |
+## The stack
 
-Audio (edge-tts) needs **no account or key**. To send *from your own domain*
-instead of the shared `onboarding@resend.dev` sender, verify a domain in Resend
-(optional) and update `from_address` in `config.yaml`.
+| Piece | Tool | Why |
+|---|---|---|
+| Agents | Claude Agent SDK | Runs the six agents and the critique loop. |
+| Reasoning model | Claude Haiku | Fast and cheap enough for a daily run. |
+| Story sourcing | feedparser (RSS) | Free, no API needed. |
+| Memory | SQLite | Remembers what already ran so stories do not repeat. |
+| Narration | Gemini text to speech (Zephyr voice) | Free and works from the cloud. |
+| Email | Resend | Sends the brief, free tier is plenty. |
+| Schedule | GitHub Actions (cron) | Runs every day, no server. |
 
-## Run it locally
+---
+
+## What it costs: $0 a day
+
+The agents run on the **Claude Agent SDK credit included with a Claude Pro plan**, so there is no paid API bill. Narration uses Gemini's free tier, email uses Resend's free tier, and scheduling runs on GitHub Actions' free minutes. Sourcing is plain RSS. Nothing here requires a paid account.
+
+---
+
+## Run it yourself
+
+You need Python 3.11 or newer, a Claude Pro plan, a free Resend account and a free Google AI Studio key for Gemini text to speech.
+
+**1. Install**
 
 ```bash
+git clone https://github.com/GuptaIshika25/ai-newsroom.git
+cd ai-newsroom
 pip install -r requirements.txt
-cp .env.example .env          # then paste your two keys into .env
-
-# 1) Dry run — no keys needed. Stubs summaries, skips email, writes output/.
-python src/main.py --dry-run
-
-# 2) Real run — fetches, summarizes with Claude, builds audio, sends the email.
-set -a && source .env && set +a
-python src/main.py
 ```
 
-Generated files land in `output/`: the HTML digest, plain text, audio script,
-and the MP3.
+**2. Sign in to Claude (one time)**
+
+The Agent SDK uses your Claude Pro login, not a paid API key.
+
+```bash
+claude login
+```
+
+**3. Add your other keys**
+
+Copy `.env.example` to `.env` and paste in your Resend and Gemini keys.
+
+```bash
+cp .env.example .env
+```
+
+**4. Run a day**
+
+```bash
+python -m src.main
+```
+
+This scouts, drafts, fact-checks, narrates and emails a single episode. Generated files land in the output folder.
+
+---
 
 ## Deploy the daily schedule (free)
 
-1. Push this folder to a new GitHub repo.
-2. Repo → **Settings → Secrets and variables → Actions** → add two secrets:
-   `ANTHROPIC_API_KEY` and `RESEND_API_KEY`.
-3. The workflow in `.github/workflows/daily.yml` runs every morning at 11:00 UTC
-   (7 AM ET — edit the cron to your timezone). Trigger it manually any time from
-   the **Actions** tab → *Daily AI TLDR* → *Run workflow*.
+1. Push the repo to your own GitHub account.
+2. Create a token for CI so GitHub can sign in to Claude on your behalf:
 
-## Customize
+   ```bash
+   claude setup-token
+   ```
 
-Everything lives in `config.yaml`: add/remove feeds, tune `relevance_keywords`,
-change `max_stories`, swap the audio `voice` (run `edge-tts --list-voices`), or
-edit recipients. Switch the Claude model via the `ANTHROPIC_MODEL` env var.
+3. In your repo, go to **Settings -> Secrets and variables -> Actions** and add these secrets:
+   - `CLAUDE_CODE_OAUTH_TOKEN` (from the command above)
+   - `RESEND_API_KEY`
+   - `GEMINI_API_KEY`
+4. The workflow in `.github/workflows/daily.yml` runs every morning at 11:00 UTC. You can also trigger it any time from the **Actions** tab with **Run workflow**.
 
-## Tech
+---
 
-Python · feedparser · Anthropic Claude · edge-tts · Resend · GitHub Actions
+## Configure
+
+Everything tunable lives in `config.yaml`:
+
+- `feeds`: add or remove RSS sources.
+- `relevance_keywords`: tune what counts as on-topic.
+- `format.audio_stories`: how many stories make the audio and email (default 5, one lead plus four shorter items).
+- `max_per_source`: cap stories from any single outlet so one site cannot flood the brief.
+
+---
+
+## How the code is organized
+
+```
+src/
+  agents/        the six roles (scout, editor, writer, fact-checker, producer)
+  tools/         feeds, fact-check, narration and a validation guard
+  orchestrator   wires the agents together and runs the critique loop
+config.yaml      feeds, keywords and format settings
+.github/workflows/daily.yml   the daily cron job
+```
+
+The validation guard is worth a note. It catches the case where a model returns a refusal or a meta comment ("I could not access the article") instead of real narration, and drops it before it can be read aloud.
+
+---
+
+## The honest part
+
+The agents were the easy part. They worked early. Every real fight was in the glue around the model: a free voice that worked on my laptop but got blocked from the cloud, a run that reported success while silently sending nothing, an audio file that came out as the wrong format. The full write-up of what broke and the product thinking behind the project is here:
+
+[Read the case study](https://guptaishika25.github.io/newsroom.html)
+
+---
+
+Built solo by **Ishika Gupta**.
+[Portfolio](https://guptaishika25.github.io) · [LinkedIn](https://www.linkedin.com/in/ishika-gupta/) · [GitHub](https://github.com/GuptaIshika25)
