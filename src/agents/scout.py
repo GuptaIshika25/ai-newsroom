@@ -43,6 +43,42 @@ async def _run_scout(prompt: str) -> str:
     return await query_with_retry(prompt, ClaudeAgentOptions(allowed_tools=[]))
 
 
+def _extract_json_array(text: str) -> str:
+    """Pull just the JSON array out of the model's reply.
+
+    Strips markdown fences and any prose before/after by slicing from the
+    first '[' to the last ']'. Returns the original text if no array is found.
+    """
+    if text.startswith("```"):
+        text = "\n".join(l for l in text.splitlines() if not l.startswith("```")).strip()
+    start = text.find("[")
+    end = text.rfind("]")
+    if start != -1 and end != -1 and end > start:
+        return text[start : end + 1]
+    return text
+
+
+def _parse_kept(raw_text: str) -> list[dict]:
+    """Parse Scout's reply into a list of kept items, tolerating malformed JSON.
+
+    First tries to extract and parse the array directly. If that fails (e.g. a
+    missing comma or an unescaped quote in a title), re-asks the model once to
+    repair its own output into valid JSON before giving up.
+    """
+    try:
+        return json.loads(_extract_json_array(raw_text))
+    except json.JSONDecodeError as exc:
+        print(f"  Scout returned invalid JSON ({exc}) — asking it to repair and retrying once …")
+        repair_prompt = (
+            "The following was supposed to be a JSON array but is malformed. "
+            "Return ONLY the corrected, valid JSON array — no commentary, markdown, "
+            "or code fences. Keep the same items and keys; just fix the JSON.\n\n"
+            f"{raw_text}"
+        )
+        repaired = asyncio.run(_run_scout(repair_prompt)).strip()
+        return json.loads(_extract_json_array(repaired))
+
+
 def run(run_date: str | None = None) -> list[Story]:
     """Fetch feeds, filter with Claude (via Agent SDK / Claude Pro plan), persist candidates."""
     with open("config.yaml") as f:
@@ -77,12 +113,7 @@ def run(run_date: str | None = None) -> list[Story]:
     print("Calling Scout (Claude Agent SDK / Claude Pro plan) …")
     raw_text = asyncio.run(_run_scout(prompt)).strip()
 
-    # Strip markdown fences if model adds them anyway
-    if raw_text.startswith("```"):
-        lines = raw_text.splitlines()
-        raw_text = "\n".join(l for l in lines if not l.startswith("```")).strip()
-
-    kept: list[dict] = json.loads(raw_text)
+    kept: list[dict] = _parse_kept(raw_text)
 
     url_index = {r["url"]: r for r in raw_items}
 
